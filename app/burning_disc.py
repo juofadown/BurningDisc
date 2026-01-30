@@ -123,7 +123,7 @@ class BurningDiscApp():
         self.lbl_reclabel = tk.Label(content_frame, text='Record Label')
         self.lbl_reclabel.grid(row=1, column=2, sticky='e',padx=self.content_padx, pady=self.content_pady)
 
-        self.entry_reclabel = ttk.Entry(content_frame, width=30)
+        self.entry_reclabel = ttk.Entry(content_frame, textvariable=self.reclabel, width=30)
         self.entry_reclabel.grid(row=1, column=3, sticky="w", pady=self.content_pady)
 
         # dropdown type
