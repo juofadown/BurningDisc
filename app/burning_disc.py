@@ -165,6 +165,25 @@ class BurningDiscApp():
         self.manage_btnstate(self.btn_state)
 
     def save(self):
+        title = self.title.get().strip()
+        year = self.year.get().strip()
+        label = self.reclabel.get().strip()
+        description = self.txt_description.get("1.0", tk.END)
+
+        try:
+            self.cursor.execute(
+                """
+                INSERT INTO ALBUM 
+                (title, release_year, label, description)
+                VALUES (?, ?, ?, ?)
+                """,
+                (title, int(year), label, description)
+            )
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("database error: ", error)
+        
         self.btn_state = 0
         self.manage_btnstate(self.btn_state)
 
