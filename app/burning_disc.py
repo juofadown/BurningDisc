@@ -26,7 +26,18 @@ class BurningDiscApp():
         self.connect = sqlite3.connect(DB_FILE)
         self.cursor = self.connect.cursor()
 
-        self.btn_state = 0 #0 = view, 1 = new, 2 = editing
+        #variables
+        self.id = tk.IntVar()
+        self.title = tk.StringVar()
+        self.artist = tk.StringVar()
+        self.year = tk.StringVar()
+        self.reclabel = tk.StringVar()
+        self.type = tk.StringVar()
+
+        self.b_mp3 = tk.BooleanVar()
+        self.b_surface = tk.BooleanVar()
+        self.b_ext = tk.BooleanVar()
+        self.b_usb = tk.BooleanVar()
 
         #layout
         self.toolbar_btn_width = 6
@@ -77,21 +88,21 @@ class BurningDiscApp():
         self.lbl_id = tk.Label(content_frame, text="ID")
         self.lbl_id.grid(row=0, column=0, sticky="e", padx=self.content_padx, pady=self.content_top_pady)
 
-        self.entry_id = ttk.Entry(content_frame, state='readonly',width=10)
+        self.entry_id = ttk.Entry(content_frame, state='readonly', textvariable=self.id, width=10)
         self.entry_id.grid(row=0, column=1, sticky="w", pady=self.content_top_pady)
 
         # title
         self.lbl_title = tk.Label(content_frame, text='Title')
-        self.lbl_title.grid(row=1, column=0, sticky='e',padx=self.content_padx, pady=self.content_pady)
+        self.lbl_title.grid(row=1, column=0, sticky='e', padx=self.content_padx, pady=self.content_pady)
 
-        self.entry_title = ttk.Entry(content_frame, width=30)
+        self.entry_title = ttk.Entry(content_frame, textvariable=self.title, width=30)
         self.entry_title.grid(row=1, column=1, sticky="w", pady=self.content_pady)
 
         # artist
         self.lbl_artist = tk.Label(content_frame, text='Artist')
         self.lbl_artist.grid(row=2, column=0, sticky='e', padx=self.content_padx, pady=self.content_pady)
 
-        self.entry_artist = ttk.Entry(content_frame, width=30)
+        self.entry_artist = ttk.Entry(content_frame, textvariable=self.artist, width=30)
         self.entry_artist.grid(row=2, column=1, sticky="w", pady=self.content_pady)
 
         # description
@@ -105,7 +116,7 @@ class BurningDiscApp():
         self.lbl_year = tk.Label(content_frame, text='Year')
         self.lbl_year.grid(row=0, column=2, sticky='e',padx=self.content_padx, pady=self.content_top_pady)
 
-        self.entry_year = ttk.Entry(content_frame, width=30)
+        self.entry_year = ttk.Entry(content_frame, textvariable=self.year,width=30)
         self.entry_year.grid(row=0, column=3, sticky="w", pady=self.content_top_pady)
 
         # record label
@@ -119,7 +130,7 @@ class BurningDiscApp():
         self.lbl_type = tk.Label(content_frame, text='Type')
         self.lbl_type.grid(row=2, column=2, sticky='e',padx=self.content_padx, pady=self.content_pady)
 
-        self.dropdown_type = ttk.Combobox(content_frame, values=['MP3', 'FLAC', 'CD'], width=20, state='readonly')
+        self.dropdown_type = ttk.Combobox(content_frame, values=['MP3', 'FLAC', 'CD'], textvariable=self.type, width=20, state='readonly')
         self.dropdown_type.grid(row=2, column=3, sticky='w', pady=self.content_pady)
 
         # location
@@ -130,20 +141,16 @@ class BurningDiscApp():
         frame_location = tk.Frame(content_frame)
         frame_location.grid(row=3, column=3, sticky='w', pady=self.content_pady)
 
-        # checkboxes:
-        self.b_mp3 = tk.BooleanVar()
+        # checkboxes
         self.cb_mp3 = tk.Checkbutton(frame_location, text="MP3 Player", variable=self.b_mp3)
         self.cb_mp3.grid(row=0, column=0, sticky='w', pady=2)
 
-        self.b_surface = tk.BooleanVar()
         self.cb_surface = tk.Checkbutton(frame_location, text="Surface", variable=self.b_surface)
         self.cb_surface.grid(row=1, column=0, sticky='w', pady=2)
 
-        self.b_ext = tk.BooleanVar()
         self.cb_ext = tk.Checkbutton(frame_location, text="External Disk", variable=self.b_ext)
         self.cb_ext.grid(row=2, column=0, sticky='w', pady=2)
 
-        self.b_usb = tk.BooleanVar()
         self.cb_usb = tk.Checkbutton(frame_location, text="USB Stick", variable=self.b_usb)
         self.cb_usb.grid(row=3, column=0, sticky='w', pady=2)
 
@@ -151,6 +158,7 @@ class BurningDiscApp():
     def new(self):
         self.btn_state = 1
         self.manage_btnstate(self.btn_state)
+        self.clear_fields()
 
     def edit(self):
         self.btn_state = 2
@@ -167,6 +175,19 @@ class BurningDiscApp():
     def cancel(self):
         self.btn_state = 0
         self.manage_btnstate(self.btn_state)
+
+    def clear_fields(self):
+        self.title.set("")
+        self.artist.set("")
+        self.year.set("")
+        self.reclabel.set("")
+        self.type.set("")
+        self.txt_description.delete("1.0", tk.END)
+
+        self.b_mp3.set(False)
+        self.b_ext.set(False)
+        self.b_surface.set(False)
+        self.b_usb.set(False)
 
     # btnstate function
     def manage_btnstate(self, state):
@@ -207,6 +228,8 @@ class BurningDiscApp():
 
     # startup
     def startup(self):
+        self.btn_state = 0 #0 = view, 1 = new, 2 = editing
+
         self.btn_new.config(state="normal")
         self.btn_edit.config(state="normal")
         self.btn_save.config(state="disabled")
