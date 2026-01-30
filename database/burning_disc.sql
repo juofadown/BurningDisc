@@ -1,0 +1,52 @@
+CREATE TABLE ARTIST (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE ALBUM (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    release_year INTEGER,
+    label TEXT,
+    description TEXT
+);
+
+CREATE TABLE TRACK (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    album_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    track_number INTEGER,
+    length TEXT,
+    FOREIGN KEY (album_id) REFERENCES ALBUM(id)
+);
+
+CREATE TABLE MEDIA (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    album_id INTEGER NOT NULL,
+    type TEXT,
+    source TEXT,
+    barcode TEXT,
+    condition TEXT,
+    FOREIGN KEY (album_id) REFERENCES ALBUM(id)
+);
+
+CREATE TABLE IF NOT EXISTS ALBUM_ARTIST (
+    album_id INTEGER NOT NULL,
+    artist_id INTEGER NOT NULL,
+    PRIMARY KEY (album_id, artist_id),
+    FOREIGN KEY (album_id) REFERENCES ALBUM(id),
+    FOREIGN KEY (artist_id) REFERENCES ARTIST(id)
+);
+
+CREATE TABLE IF NOT EXISTS LOCATION (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    location_name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS MEDIA_LOCATION (
+    media_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
+    PRIMARY KEY (media_id, location_id),
+    FOREIGN KEY (media_id) REFERENCES MEDIA(id),
+    FOREIGN KEY (location_id) REFERENCES LOCATION(id)
+);
