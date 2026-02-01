@@ -26,6 +26,9 @@ class BurningDiscApp():
         self.connect = sqlite3.connect(DB_FILE)
         self.cursor = self.connect.cursor()
 
+        # enable foreign keys
+        self.cursor.execute("PRAGMA foreign_keys = ON;")
+
         #variables
         self.id = tk.IntVar()
         self.title = tk.StringVar()
@@ -170,20 +173,101 @@ class BurningDiscApp():
         label = self.reclabel.get().strip()
         description = self.txt_description.get("1.0", tk.END)
 
+        artist = self.artist.get().strip()
+        mp3 = int(self.b_mp3.get())
+        usb = int(self.b_usb.get())
+        surface = int(self.b_surface.get())
+        ext = int(self.b_ext.get())
+
+        #insert into album table
         try:
             self.cursor.execute(
-                """
-                INSERT INTO ALBUM 
-                (title, release_year, label, description)
-                VALUES (?, ?, ?, ?)
-                """,
-                (title, int(year), label, description)
-            )
+            """
+            INSERT INTO ALBUM (title, release_year, label, description)
+            VALUES (?, ?, ?, ?)
+            """,
+            (title, int(year), label, description))
+            album_id = self.cursor.lastrowid
             self.connect.commit()
 
         except sqlite3.Error as error:
-            print("database error: ", error)
+            print("table: ALBUM\n database error: ", error)
         
+        # insert into artist table
+        try:
+            self.cursor.execute(
+                "SELECT id FROM ARTIST WHERE name = ?",
+                (artist,)
+            )
+            row = self.cursor.fetchone()
+            if row:
+                artist_id = row[0]
+            else:
+                self.cursor.execute(
+                "INSERT INTO ARTIST (name) VALUES (?)",
+                (artist,))
+                artist_id = self.cursor.lastrowid
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("table: ARTIST\n database error: ", error)
+
+        # insert into album_artist table
+        try:           
+            self.cursor.execute(
+            """
+            INSERT INTO ALBUM_ARTIST (album_id, artist_id)
+            VALUES (?, ?)
+            """,
+            (album_id, artist_id))
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("table: ALBUM_ARTIST\n database error: ", error)
+        
+        # insert into media table
+        try:
+            self.cursor.execute(
+            """
+            INSERT INTO MEDIA
+            (album_id, type)
+            VALUES (?, ?)
+            """,
+            (album_id, self.type.get()))
+            media_id = self.cursor.lastrowid
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("table: MEDIA\n database error: ", error)
+
+        # insert into location table
+        try:
+            self.cursor.execute(
+            """
+            INSERT INTO LOCATION
+            (locmp3, locusb, locsurface, locext)
+            VALUES (?, ?, ?, ?)
+            """,
+            (mp3, usb, surface, ext))
+            location_id = self.cursor.lastrowid
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("table: LOCATION\n database error: ", error)
+
+        # insert into media_location table
+        try:
+            self.cursor.execute(
+            """
+            INSERT INTO MEDIA_LOCATION (media_id, location_id)
+            VALUES (?, ?)
+            """,
+            (media_id, location_id))
+            self.connect.commit()
+
+        except sqlite3.Error as error:
+            print("table: MEDIA_LOCATION\n database error: ", error)
+
         self.btn_state = 0
         self.manage_btnstate(self.btn_state)
 
