@@ -332,22 +332,7 @@ class BurningDiscApp():
     # startup
     def startup(self):
         self.btn_state = 0 #0 = view, 1 = new, 2 = editing
-
-        self.btn_new.config(state="normal")
-        self.btn_edit.config(state="normal")
-        self.btn_save.config(state="disabled")
-        self.btn_delete.config(state="normal")
-
-        self.entry_id.config(state='readonly')
-        self.entry_title.config(state='disabled')
-        self.entry_artist.config(state='disabled')
-        self.entry_year.config(state='disabled')
-        self.entry_reclabel.config(state='disabled')
-        self.txt_description.config(state='disabled')
-        self.cb_ext.config(state='disabled')
-        self.cb_mp3.config(state='disabled')
-        self.cb_surface.config(state='disabled')
-        self.cb_usb.config(state='disabled')
+        self.manage_btnstate(self.btn_state)
 
 root = tk.Tk()
 app = BurningDiscApp(root)
