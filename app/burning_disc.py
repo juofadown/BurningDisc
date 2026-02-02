@@ -72,6 +72,12 @@ class BurningDiscApp():
         self.btn_delete = tk.Button(toolbar, text='Delete', command=self.delete, width=self.toolbar_btn_width, height=self.toolbar_btn_height)
         self.btn_delete.pack(side='left', padx=self.toolbar_padx, pady=self.toolbar_pady)
 
+        self.btn_prev = tk.Button(toolbar, text='<', command=lambda: self.navigate_records('PREV'), width=self.toolbar_btn_width, height=self.toolbar_btn_height)
+        self.btn_prev.pack(side='left', padx=self.toolbar_padx, pady=self.toolbar_pady)
+
+        self.btn_next = tk.Button(toolbar, text='>', command=lambda: self.navigate_records('NEXT'), width=self.toolbar_btn_width, height=self.toolbar_btn_height)
+        self.btn_next.pack(side='left', padx=self.toolbar_padx, pady=self.toolbar_pady)
+
         self.btn_cancel = tk.Button(toolbar, text='<', command=self.cancel, width=self.toolbar_btn_width, height=self.toolbar_btn_height)
         self.btn_cancel.pack(side='right', padx=self.toolbar_padx, pady=self.toolbar_pady)
 
@@ -274,6 +280,97 @@ class BurningDiscApp():
     def delete(self):
         self.btn_state = 0
         self.manage_btnstate(self.btn_state)
+
+    def navigate_records(self, direction):
+        if direction == 'NEXT':
+            if self.id.get() == 0:
+                self.navigate_records('LAST')
+            else:
+                try:
+                    self.cursor.execute(
+                    """
+                    SELECT id, title, release_year, label, description FROM ALBUM 
+                    WHERE id>? ORDER BY id ASC
+                    """, (self.id.get(),))
+                    row = self.cursor.fetchone()
+                    print(row)
+                    if row:
+                        self.id.set(row[0])
+                        self.title.set(row[1])
+                        self.year.set(row[2])
+                        self.reclabel.set(row[3])
+                        self.txt_description.delete('1.0', tk.END)
+                        self.txt_description.insert(tk.END, row[4])
+                    else: 
+                        return False
+
+                except sqlite3.Error as error:
+                    print("navigate_records: NEXT\ndatabase error: ", error)
+        elif direction == 'LAST':
+            try:
+                self.cursor.execute(
+                """
+                SELECT * FROM ALBUM 
+                ORDER BY id DESC
+                """)
+                row = self.cursor.fetchone()
+                print(row)
+                if row:
+                    self.id.set(row[0])
+                    self.title.set(row[1])
+                    self.year.set(row[2])
+                    self.reclabel.set(row[3])
+                    self.txt_description.delete('1.0', tk.END)
+                    self.txt_description.insert(tk.END, row[4])
+            
+            except sqlite3.Error as error:
+                print("navigate_records: LAST\ndatabase error: ", error)
+
+        elif direction == 'PREV':
+            if self.id.get() == 0:
+                self.navigate_records('FIRST')
+            else:
+                try:
+                    self.cursor.execute(
+                    """
+                    SELECT id, title, release_year, label, description FROM ALBUM 
+                    WHERE id<? ORDER BY id DESC
+                    """, (self.id.get(),))
+                    row = self.cursor.fetchone()
+                    print(row)
+                    if row:
+                        self.id.set(row[0])
+                        self.title.set(row[1])
+                        self.year.set(row[2])
+                        self.reclabel.set(row[3])
+                        self.txt_description.delete('1.0', tk.END)
+                        self.txt_description.insert(tk.END, row[4])
+                    else:
+                        return False
+
+                except sqlite3.Error as error:
+                    print("navigate_records: PREV\ndatabase error: ", error)
+
+        elif direction == 'FIRST':
+            try:
+                self.cursor.execute(
+                    """
+                    SELECT * FROM ALBUM 
+                    ORDER BY id ASC
+                    """)
+                row = self.cursor.fetchone()
+                
+                if row:
+                    self.id.set(row[0])
+                    self.title.set(row[1])
+                    self.year.set(row[2])
+                    self.reclabel.set(row[3])
+                    self.txt_description.delete('1.0', tk.END)
+                    self.txt_description.insert(tk.END, row[4])
+            except sqlite3.Error as error:
+                print('navigate_records: FIRST\ndatabase error: ', error)
+
+                
 
     def cancel(self):
         self.btn_state = 0
