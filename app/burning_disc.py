@@ -384,6 +384,12 @@ class BurningDiscApp():
         self.manage_btnstate(self.btn_state)
 
     def clear_fields(self):
+        self.cursor.execute("SELECT MAX(id) FROM ALBUM")
+        max_id = self.cursor.fetchone()[0]
+
+        next_id = max_id + 1 if max_id else 1
+
+        self.id.set(next_id)
         self.title.set("")
         self.artist.set("")
         self.year.set("")
