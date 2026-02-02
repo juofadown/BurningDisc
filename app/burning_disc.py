@@ -269,7 +269,6 @@ class BurningDiscApp():
             VALUES (?, ?)
             """,
             (media_id, location_id))
-            self.connect.commit()
 
         except sqlite3.Error as error:
             print("table: MEDIA_LOCATION\n database error: ", error)
@@ -282,95 +281,103 @@ class BurningDiscApp():
         self.manage_btnstate(self.btn_state)
 
     def navigate_records(self, direction):
-        if direction == 'NEXT':
-            if self.id.get() == 0:
-                self.navigate_records('LAST')
-            else:
-                try:
-                    self.cursor.execute(
-                    """
-                    SELECT id, title, release_year, label, description FROM ALBUM 
-                    WHERE id>? ORDER BY id ASC
-                    """, (self.id.get(),))
-                    row = self.cursor.fetchone()
-                    print(row)
-                    if row:
-                        self.id.set(row[0])
-                        self.title.set(row[1])
-                        self.year.set(row[2])
-                        self.reclabel.set(row[3])
-                        self.txt_description.delete('1.0', tk.END)
-                        self.txt_description.insert(tk.END, row[4])
-                    else: 
-                        return False
+        try:
+            if direction == 'NEXT':
+                if self.id.get() == 0:
+                    self.navigate_records('LAST')
+                else:
+                    self.cursor.execute('SELECT id FROM ALBUM WHERE id > ? ORDER BY id ASC', (self.id.get(),))
+                    
+            elif direction == 'PREV':
+                if self.id.get() == 0:
+                    self.navigate_records('FIRST')
+                else:
+                    self.cursor.execute('SELECT id FROM ALBUM WHERE id < ? ORDER BY id DESC', (self.id.get(),))
 
-                except sqlite3.Error as error:
-                    print("navigate_records: NEXT\ndatabase error: ", error)
-        elif direction == 'LAST':
-            try:
-                self.cursor.execute(
-                """
-                SELECT * FROM ALBUM 
-                ORDER BY id DESC
-                """)
-                row = self.cursor.fetchone()
-                print(row)
-                if row:
-                    self.id.set(row[0])
-                    self.title.set(row[1])
-                    self.year.set(row[2])
-                    self.reclabel.set(row[3])
-                    self.txt_description.delete('1.0', tk.END)
-                    self.txt_description.insert(tk.END, row[4])
+            elif direction == 'FIRST':
+                    self.cursor.execute('SELECT id FROM ALBUM ORDER BY id ASC')
+
+            elif direction == 'LAST':
+                    self.cursor.execute('SELECT id FROM ALBUM ORDER BY id DESC')         
+
+            album_id = self.cursor.fetchone()
+            if album_id:
+                self.load_record(album_id[0])
+        except sqlite3.Error as error:
+            print('navigate_records:\ndatabase error: ', error)      
+
+    def load_record(self, album_id):
+        try:
+            # album
+            self.cursor.execute(
+                '''
+                SELECT id, title, release_year, label, description 
+                FROM ALBUM WHERE id = ?
+                ''', (album_id,))
+            album = self.cursor.fetchone()
+            if not album:
+                print('load_record: album, select failed')
+                return
+            self.id.set(album[0])
+            self.title.set(album[1])
+            self.year.set(album[2])
+            self.reclabel.set(album[3])
+
+            self.txt_description.configure(state='normal')
+            self.txt_description.delete('1.0', tk.END)
+            self.txt_description.insert(tk.END, album[4])
+            self.txt_description.configure(state='disabled')
+
+            # artist
+            self.cursor.execute(
+                '''
+                SELECT t1.name 
+                FROM ARTIST t1 
+                JOIN ALBUM_ARTIST t2 ON t1.id = t2.artist_id 
+                WHERE t2.album_id = ?
+                ''', (album_id,))
+            artist = self.cursor.fetchone()
+            if not artist:
+                print('load_record: artist, select failed')
+                return
             
-            except sqlite3.Error as error:
-                print("navigate_records: LAST\ndatabase error: ", error)
+            self.artist.set(artist[0])
 
-        elif direction == 'PREV':
-            if self.id.get() == 0:
-                self.navigate_records('FIRST')
+            # media
+            self.cursor.execute(
+                '''
+                SELECT id, type 
+                FROM MEDIA WHERE album_id = ?
+                ''', (album_id,))
+            media = self.cursor.fetchone()
+            media_id = None
+
+            if media:
+                media_id = media[0]
+                self.type.set(media[1])
             else:
-                try:
-                    self.cursor.execute(
-                    """
-                    SELECT id, title, release_year, label, description FROM ALBUM 
-                    WHERE id<? ORDER BY id DESC
-                    """, (self.id.get(),))
-                    row = self.cursor.fetchone()
-                    print(row)
-                    if row:
-                        self.id.set(row[0])
-                        self.title.set(row[1])
-                        self.year.set(row[2])
-                        self.reclabel.set(row[3])
-                        self.txt_description.delete('1.0', tk.END)
-                        self.txt_description.insert(tk.END, row[4])
-                    else:
-                        return False
-
-                except sqlite3.Error as error:
-                    print("navigate_records: PREV\ndatabase error: ", error)
-
-        elif direction == 'FIRST':
-            try:
+                print('load_record: media, select failed')
+                return
+            
+            # location
+            if media_id:
                 self.cursor.execute(
-                    """
-                    SELECT * FROM ALBUM 
-                    ORDER BY id ASC
-                    """)
-                row = self.cursor.fetchone()
-                
-                if row:
-                    self.id.set(row[0])
-                    self.title.set(row[1])
-                    self.year.set(row[2])
-                    self.reclabel.set(row[3])
-                    self.txt_description.delete('1.0', tk.END)
-                    self.txt_description.insert(tk.END, row[4])
-            except sqlite3.Error as error:
-                print('navigate_records: FIRST\ndatabase error: ', error)
-
-                
+                    '''
+                    SELECT t1.locmp3, t1.locusb, t1.locsurface, t1.locext 
+                    FROM LOCATION t1 
+                    JOIN MEDIA_LOCATION t2 ON t1.id = t2.location_id 
+                    WHERE t2.media_id = ?
+                    ''', (media_id,))
+                loc = self.cursor.fetchone()
+                if not loc:
+                    print('load_record: location, select failed')
+                    return
+                self.b_mp3.set(bool(loc[0]))
+                self.b_usb.set(bool(loc[1]))
+                self.b_surface.set(bool(loc[2]))
+                self.b_ext.set(bool(loc[3]))
+        except sqlite3.Error as error:
+            print('navigate_records:\ndatabase error: ', error)
 
     def cancel(self):
         self.btn_state = 0
