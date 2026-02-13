@@ -165,6 +165,13 @@ class BurningDiscApp():
 
     # toolbar functions
     def new(self):
+        self.cursor.execute("SELECT MAX(id) FROM ALBUM")
+        max_id = self.cursor.fetchone()[0]
+        if max_id:
+            self.id.set(max_id + 1)
+        else:
+            self.id.set(0)
+
         self.btn_state = 1
         self.manage_btnstate(self.btn_state)
         self.clear_fields()
@@ -330,8 +337,41 @@ class BurningDiscApp():
         self.manage_btnstate(self.btn_state)
 
     def delete(self):
-        self.btn_state = 0
-        self.manage_btnstate(self.btn_state)
+        album_id = self.id.get()
+
+        try:
+            # media id
+            self.cursor.execute("SELECT id FROM MEDIA WHERE album_id = ?", (album_id,))
+            media = self.cursor.fetchone()
+            if media:
+                media_id = media[0]
+
+                # location id
+                self.cursor.execute("""
+                    SELECT location_id FROM MEDIA_LOCATION WHERE media_id = ?
+                """, (media_id,))
+                loc = self.cursor.fetchone()
+                if loc:
+                    location_id = loc[0]
+
+                    self.cursor.execute("DELETE FROM MEDIA_LOCATION WHERE media_id = ?", (media_id,))
+                    self.cursor.execute("DELETE FROM LOCATION WHERE id = ?", (location_id,))
+
+                self.cursor.execute("DELETE FROM MEDIA WHERE id = ?", (media_id,))
+
+            self.cursor.execute("DELETE FROM ALBUM_ARTIST WHERE album_id = ?", (album_id,))
+            self.cursor.execute("DELETE FROM ALBUM WHERE id = ?", (album_id,))
+
+            self.connect.commit()
+
+            self.id.set(0)
+            self.clear_fields()
+
+            self.btn_state = 0
+            self.manage_btnstate(self.btn_state)
+
+        except sqlite3.Error as error:
+            print("DELETE error:", error)
 
     def navigate_records(self, direction):
         try:
@@ -437,18 +477,17 @@ class BurningDiscApp():
         self.manage_btnstate(self.btn_state)
 
     def clear_fields(self):
-        self.cursor.execute("SELECT MAX(id) FROM ALBUM")
-        max_id = self.cursor.fetchone()[0]
-
-        next_id = max_id + 1 if max_id else 1
-
-        self.id.set(next_id)
         self.title.set("")
         self.artist.set("")
         self.year.set("")
         self.reclabel.set("")
         self.type.set("")
+
+        state = self.txt_description.cget('state')
+        self.txt_description.config(state='normal')
         self.txt_description.delete("1.0", tk.END)
+        self.txt_description.config(state=state)
+
 
         self.b_mp3.set(False)
         self.b_ext.set(False)
