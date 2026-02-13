@@ -185,93 +185,146 @@ class BurningDiscApp():
         surface = int(self.b_surface.get())
         ext = int(self.b_ext.get())
 
-        #insert into album table
-        try:
-            self.cursor.execute(
-            """
-            INSERT INTO ALBUM (title, release_year, label, description)
-            VALUES (?, ?, ?, ?)
-            """,
-            (title, int(year), label, description))
-            album_id = self.cursor.lastrowid
-            self.connect.commit()
-
-        except sqlite3.Error as error:
-            print("table: ALBUM\n database error: ", error)
-        
-        # insert into artist table
-        try:
-            self.cursor.execute(
-                "SELECT id FROM ARTIST WHERE name = ?",
-                (artist,)
-            )
-            row = self.cursor.fetchone()
-            if row:
-                artist_id = row[0]
-            else:
+        if self.btn_state == 1:
+            #insert into album table
+            try:
                 self.cursor.execute(
-                "INSERT INTO ARTIST (name) VALUES (?)",
-                (artist,))
-                artist_id = self.cursor.lastrowid
-            self.connect.commit()
+                """
+                INSERT INTO ALBUM (title, release_year, label, description)
+                VALUES (?, ?, ?, ?)
+                """,
+                (title, int(year), label, description))
+                album_id = self.cursor.lastrowid
+                self.connect.commit()
 
-        except sqlite3.Error as error:
-            print("table: ARTIST\n database error: ", error)
+            except sqlite3.Error as error:
+                print("table: ALBUM\n database error: ", error)
+            
+            # insert into artist table
+            try:
+                self.cursor.execute(
+                    "SELECT id FROM ARTIST WHERE name = ?",
+                    (artist,)
+                )
+                row = self.cursor.fetchone()
+                if row:
+                    artist_id = row[0]
+                else:
+                    self.cursor.execute(
+                    "INSERT INTO ARTIST (name) VALUES (?)",
+                    (artist,))
+                    artist_id = self.cursor.lastrowid
+                self.connect.commit()
 
-        # insert into album_artist table
-        try:           
-            self.cursor.execute(
-            """
-            INSERT INTO ALBUM_ARTIST (album_id, artist_id)
-            VALUES (?, ?)
-            """,
-            (album_id, artist_id))
-            self.connect.commit()
+            except sqlite3.Error as error:
+                print("table: ARTIST\n database error: ", error)
 
-        except sqlite3.Error as error:
-            print("table: ALBUM_ARTIST\n database error: ", error)
-        
-        # insert into media table
-        try:
-            self.cursor.execute(
-            """
-            INSERT INTO MEDIA
-            (album_id, type)
-            VALUES (?, ?)
-            """,
-            (album_id, self.type.get()))
-            media_id = self.cursor.lastrowid
-            self.connect.commit()
+            # insert into album_artist table
+            try:           
+                self.cursor.execute(
+                """
+                INSERT INTO ALBUM_ARTIST (album_id, artist_id)
+                VALUES (?, ?)
+                """,
+                (album_id, artist_id))
+                self.connect.commit()
 
-        except sqlite3.Error as error:
-            print("table: MEDIA\n database error: ", error)
+            except sqlite3.Error as error:
+                print("table: ALBUM_ARTIST\n database error: ", error)
+            
+            # insert into media table
+            try:
+                self.cursor.execute(
+                """
+                INSERT INTO MEDIA
+                (album_id, type)
+                VALUES (?, ?)
+                """,
+                (album_id, self.type.get()))
+                media_id = self.cursor.lastrowid
+                self.connect.commit()
 
-        # insert into location table
-        try:
-            self.cursor.execute(
-            """
-            INSERT INTO LOCATION
-            (locmp3, locusb, locsurface, locext)
-            VALUES (?, ?, ?, ?)
-            """,
-            (mp3, usb, surface, ext))
-            location_id = self.cursor.lastrowid
-            self.connect.commit()
+            except sqlite3.Error as error:
+                print("table: MEDIA\n database error: ", error)
 
-        except sqlite3.Error as error:
-            print("table: LOCATION\n database error: ", error)
+            # insert into location table
+            try:
+                self.cursor.execute(
+                """
+                INSERT INTO LOCATION
+                (locmp3, locusb, locsurface, locext)
+                VALUES (?, ?, ?, ?)
+                """,
+                (mp3, usb, surface, ext))
+                location_id = self.cursor.lastrowid
+                self.connect.commit()
 
-        # insert into media_location table
-        try:
-            self.cursor.execute(
-            """
-            INSERT INTO MEDIA_LOCATION (media_id, location_id)
-            VALUES (?, ?)
-            """,
-            (media_id, location_id))
+            except sqlite3.Error as error:
+                print("table: LOCATION\n database error: ", error)
 
-        except sqlite3.Error as error:
-            print("table: MEDIA_LOCATION\n database error: ", error)
+            # insert into media_location table
+            try:
+                self.cursor.execute(
+                """
+                INSERT INTO MEDIA_LOCATION (media_id, location_id)
+                VALUES (?, ?)
+                """,
+                (media_id, location_id))
+
+            except sqlite3.Error as error:
+                print("table: MEDIA_LOCATION\n database error: ", error)
+        elif self.btn_state == 2:
+            album_id = self.id.get()
+            try:
+                # update album
+                self.cursor.execute("""
+                    UPDATE ALBUM
+                    SET title = ?, release_year = ?, label = ?, description = ?
+                    WHERE id = ?
+                """, (title, int(year), label, description, album_id))
+
+                # artist
+                self.cursor.execute("SELECT id FROM ARTIST WHERE name = ?", (artist,))
+                row = self.cursor.fetchone()
+                if row:
+                    artist_id = row[0]
+                else:
+                    self.cursor.execute("INSERT INTO ARTIST (name) VALUES (?)", (artist,))
+                    artist_id = self.cursor.lastrowid
+
+                self.cursor.execute("""
+                    UPDATE ALBUM_ARTIST
+                    SET artist_id = ?
+                    WHERE album_id = ?
+                """, (artist_id, album_id))
+
+                # media
+                self.cursor.execute("""
+                    UPDATE MEDIA
+                    SET type = ?
+                    WHERE album_id = ?
+                """, (self.type.get(), album_id))
+
+                # location
+                self.cursor.execute("""
+                    SELECT t1.id
+                    FROM LOCATION t1
+                    JOIN MEDIA_LOCATION t2 ON t1.id = t2.location_id
+                    JOIN MEDIA t3 ON t3.id = t2.media_id
+                    WHERE t3.album_id = ?
+                """, (album_id,))
+                loc_id = self.cursor.fetchone()[0]
+
+                self.cursor.execute("""
+                    UPDATE LOCATION
+                    SET locmp3=?, locusb=?, locsurface=?, locext=?
+                    WHERE id=?
+                """, (mp3, usb, surface, ext, loc_id))
+
+                self.connect.commit()
+
+            except sqlite3.Error as error:
+                print("UPDATE error:", error)
 
         self.btn_state = 0
         self.manage_btnstate(self.btn_state)
